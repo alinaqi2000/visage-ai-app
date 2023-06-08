@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "386122738030",
+    "project_id": "visage-ai-95a0c",
+    "storage_bucket": "visage-ai-95a0c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:386122738030:android:238ce4c70757d92194397f",
+        "android_client_info": {
+          "package_name": "com.visageai.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "386122738030-08hrp1uhqja3fo2gksh865l9ba4pm14n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.visageai.app",
+            "certificate_hash": "80fec22b0cd49df69a7ac53b5f296b9b3d23cb78"
+          }
+        },
+        {
+          "client_id": "386122738030-a2k89fm27kp9h1qcmkbumh3e5rlkpk6u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy9OomWMUrUyd6TjH98d7Fl6KOZN5hrYk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "386122738030-a2k89fm27kp9h1qcmkbumh3e5rlkpk6u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

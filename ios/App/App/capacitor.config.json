@@ -1,0 +1,19 @@
+{
+	"appId": "com.visageai.app",
+	"appName": "Visage AI",
+	"bundledWebRuntime": false,
+	"npmClient": "npm",
+	"webDir": "out",
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 0
+		},
+		"FirebaseAuthentication": {
+			"skipNativeAuth": false,
+			"providers": [
+				"google.com"
+			]
+		}
+	},
+	"cordova": {}
+}

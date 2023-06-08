@@ -1,0 +1,35 @@
+@font-face {
+  font-family: Geologia;
+  src: url(../assets/fonts/Geologica-Regular.ttf);
+  font-weight: bold;
+}
+* {
+  font-family: Geologia, sans-serif !important;
+}
+:root {
+  --app-primary-color: #0C9287;
+}
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;
+}
+
+.slide-in {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100%;
+  background: var(--app-primary-color);
+  transform-origin: left;
+}
+
+.slide-out {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100%;
+  background: var(--app-primary-color);
+  transform-origin: right;
+}
