@@ -15,7 +15,7 @@ export default function Brand() {
         duration: 0.7,
       }}
     >
-      <Image height={50} src={Logo} alt="Logo" />
+      <Image height={36} src={Logo} alt="Logo" />
     </motion.div>
   );
 }

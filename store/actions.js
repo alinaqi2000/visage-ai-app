@@ -15,3 +15,8 @@ export const setStatusbarHeight = height => {
     s.statusbarHeight = height;
   });
 };
+export const setTimeline = detextions => {
+  Store.update(s => {
+    s.timeline = detextions;
+  });
+};

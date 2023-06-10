@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import AppShell from '../AppShell';
 import AppBar from '../ui/AppBar';
-import { API_URL, FeatureItem, MORPHIS_CLASSES, sendData } from '../ui/helpers';
+import { API_URL, FeatureItem, MORPHIS_CLASSES } from '../ui/helpers';
 import { BiImageAdd } from 'react-icons/bi';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
 import { toast } from 'react-toastify';
@@ -15,7 +15,7 @@ import { PhotoProvider, PhotoView } from 'react-photo-view';
 import { setDetections } from '../utils/storage';
 import NothingDetected from '../../assets/lotties/nothing_detected.json';
 
-export default function FaceDetection() {
+export default function FaceExpressionRecognition() {
   const [firstImage, setFirstImage] = useState(null);
   const [stage, setStage] = useState('idle');
   const [response, setResponse] = useState(null);
@@ -25,6 +25,7 @@ export default function FaceDetection() {
     setStage('idle');
     try {
       const result = await FilePicker.pickImages({ readData: true });
+      console.log(result);
       if (result.files && result.files[0]) {
         const pickerImage = result.files[0];
         setFirstImage(pickerImage);
@@ -39,22 +40,20 @@ export default function FaceDetection() {
   };
   const _sendData = async () => {
     if (firstImage) {
-      try {
-        setStage('detecting');
-        var form = new FormData();
-        form.append('image', firstImage.blob);
+      setStage('detecting');
+      var form = new FormData();
+      form.append('image', firstImage.blob);
 
-        const res = await sendData(API_URL + 'face_detection', form);
-        console.log(res);
-        setStage('hasResponse');
-        setResponse(res.success);
-        toast.error(JSON.stringify(res));
-        if (res.success) {
-          await setDetections('face_detections', res.success);
-        }
-      } catch (error) {
-        toast.error(JSON.stringify(error));
-      }
+      const res = await axios.post(API_URL + 'face_expression_recognition', form, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      setStage('hasResponse');
+      // setFirstImage(null);
+
+      setResponse(res.data.success);
+      await setDetections('face_expression_recognitions', res.data.success);
     } else {
       setStage('idle');
       toast.error('Please select a valid image!');
@@ -63,12 +62,12 @@ export default function FaceDetection() {
   };
   return (
     <AppShell>
-      <AppBar title={'face detection'} />
+      <AppBar title={'face expression recognition'} />
       <div className="flex flex-col mt-16 pb-20">
-        <h5 className="text-lg font-semibold lowercase">face detection</h5>
+        <h5 className="text-lg font-semibold lowercase">face expression recognition</h5>
         <p className="text-sm mt-2">
-          automated process of identifying and locating human faces in images using artificial
-          intelligence algorithms.
+          automated process of analyzing facial expressions to identify and classify different
+          emotions or moods.
         </p>
         <div className="mt-5">
           <div
@@ -129,23 +128,31 @@ export default function FaceDetection() {
                 </div>
                 <div className="flex justify-center flex-wrap w-full">
                   {response.detections &&
-                    response.detections.map((d, index) => (
-                      <FeatureItem key={`${index}`}>
-                        <div className="stats shadow mr-2 mb-2">
-                          <div className={MORPHIS_CLASSES + ' stat px-5 py-4'}>
-                            <div className="stat-title text-accent">person {index + 1}</div>
-                            <div className="stat-value text-3xl">{Math.floor(d._score * 100)}%</div>
-                            <div className="stat-desc text-gray-400">accuracy</div>
+                    response.detections.map((d, index) => {
+                      const expression = readExpression(d.expressions);
+                      return (
+                        <FeatureItem key={`${index}`}>
+                          <div className="stats shadow mr-2 mb-2">
+                            <div className={MORPHIS_CLASSES + ' stat px-5 py-4'}>
+                              <div className="stat-title text-accent">person {index + 1}</div>
+                              <div className="stat-value text-3xl">
+                                {Math.floor(expression.value * 100)}%
+                              </div>
+                              <div className="stat-desc text-gray-400">{expression.emotion}</div>
+                            </div>
                           </div>
-                        </div>
-                      </FeatureItem>
-                    ))}
+                        </FeatureItem>
+                      );
+                    })}
                 </div>
               </div>
             </>
           ) : stage == 'hasResponse' ? (
             <div className="w-full flex flex-col items-center justify-center mt-3">
-              <Lottie style={{ height: 150 }} data={NothingDetected} />
+              <Lottie
+                style={{ height: 150 }}
+                data={NothingDetected}
+              />
               <h6 className="mt-3 text-gray-400">nothing detected!</h6>
             </div>
           ) : (
@@ -179,6 +186,18 @@ export default function FaceDetection() {
     </AppShell>
   );
 }
+const readExpression = (expressions = []) => {
+  let highest = {
+    emotion: 'neutral',
+    value: 0,
+  };
+  for (let emos in expressions) {
+    if (expressions[emos] > highest.value) {
+      highest = { emotion: emos, value: expressions[emos] };
+    }
+  }
+  return highest;
+};
 const Fetching = () => {
   return (
     <div
@@ -186,9 +205,7 @@ const Fetching = () => {
       className="space-y-4 animate-pulse md:space-y-0 md:space-x-8 md:flex md:items-center"
     >
       <div
-        className={
-          MORPHIS_CLASSES + ' flex items-center justify-center w-full h-[200px] rounded-xl'
-        }
+        className={MORPHIS_CLASSES + ' flex items-center justify-center w-full h-[200px] rounded-xl'}
       >
         <svg
           className="w-12 h-12 text-gray-200"

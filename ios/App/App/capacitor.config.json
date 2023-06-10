@@ -4,9 +4,15 @@
 	"bundledWebRuntime": false,
 	"npmClient": "npm",
 	"webDir": "out",
+	"android": {
+		"loggingBehavior": "production"
+	},
 	"plugins": {
 		"SplashScreen": {
 			"launchShowDuration": 0
+		},
+		"CapacitorHttp": {
+			"enabled": true
 		},
 		"FirebaseAuthentication": {
 			"skipNativeAuth": false,

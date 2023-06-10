@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { getStorage } from './utils/storage';
+import { getStorage, setStorage } from './utils/storage';
 import { useRouter } from 'next/router';
 import { setLoadingState, setStatusbarHeight, setUser } from '../store/actions';
 import Store from '../store';
@@ -9,8 +9,10 @@ import { getLoadingState, getStatusbarHeight } from '../store/selectors';
 import Lottie from './ui/Lottie';
 import { SafeArea } from 'capacitor-plugin-safe-area';
 import Launching from '../assets/lotties/launching.json';
+import NavBar from './ui/NavBar';
+import { ToastContainer } from 'react-toastify';
 
-const AppShell = ({ children }) => {
+const AppShell = ({ children, navBar = false }) => {
   const router = useRouter();
   const loadingState = Store.useState(getLoadingState);
   const statusbarHeight = Store.useState(getStatusbarHeight);
@@ -24,16 +26,23 @@ const AppShell = ({ children }) => {
     setStatusbarHeight(statusBarHeight);
   };
   const checkUser = async () => {
-    const data = await getStorage('userData');
-    setUser(data);
-    setTimeout(() => {
-      setLoadingState(false);
-    }, 800);
-    if (router.pathname !== '/signup' && !data) {
+    try {
+      const data = await getStorage('userData');
+      setUser(data);
+      setTimeout(() => {
+        setLoadingState(false);
+      }, 800);
+      if (router.pathname !== '/signup' && !data) {
+        await router.push('/signup');
+      }
+      if (router.pathname == '/signup' && data) {
+        setTimeout(() => {
+          router.push('/home');
+        }, 1000);
+      }
+    } catch (error) {
+      setStorage('userData', null);
       await router.push('/signup');
-    }
-    if (router.pathname == '/signup' && data) {
-      await router.push('/home');
     }
   };
   return (
@@ -47,9 +56,27 @@ const AppShell = ({ children }) => {
         </div>
       ) : (
         <div
-          style={{ padding: '15px 15px', paddingTop: statusbarHeight == 0 ? 15 : statusbarHeight }}
+          style={{
+            paddingLeft: 15,
+            paddingRight: 15,
+            paddingBottom: navBar ? 55 : 15,
+            paddingTop: statusbarHeight == 0 ? 15 : statusbarHeight,
+          }}
         >
           {children}
+          {navBar && <NavBar />}
+          <ToastContainer
+            theme="dark"
+            autoClose={3000}
+            hideProgressBar
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            position="bottom-center"
+          />
         </div>
       )}
     </>

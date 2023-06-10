@@ -16,7 +16,7 @@ module.exports = {
     return [
       {
         source: '/',
-        destination: '/signup',
+        destination: '/home',
         permanent: true,
       },
     ];

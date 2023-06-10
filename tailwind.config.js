@@ -2,10 +2,14 @@ module.exports = {
   content: ['./pages/**/*.{js,ts,jsx,tsx}', './components/**/*.{js,ts,jsx,tsx}'],
   darkMode: 'media',
   theme: {
-    extend: {},
+    extend: {
+      backdropBlur: {
+        xs: '2px',
+      },
+    },
   },
   plugins: [require('daisyui')],
   daisyui: {
-    themes: ['dark'],
+    themes: ['forest'],
   },
 };
