@@ -15,10 +15,13 @@ import { motion } from 'framer-motion';
 import { PhotoProvider, PhotoView } from 'react-photo-view';
 import { setDetections } from '../utils/storage';
 import NothingDetected from '../../assets/lotties/nothing_detected.json';
+import Store from '../../store';
+import { getUser } from '../../store/selectors';
 
 export default function AgeGenderRecognitionPage() {
   const [firstImage, setFirstImage] = useState(null);
   const [stage, setStage] = useState('idle');
+  const user = Store.useState(getUser);
   const [response, setResponse] = useState(null);
   useEffect(() => {}, []);
   const _pickImage = async () => {
@@ -39,24 +42,23 @@ export default function AgeGenderRecognitionPage() {
       toast.error('image selection failed.');
     }
   };
+
   const _sendData = async () => {
-    toast.error(JSON.stringify(firstImage?.blob));
     if (firstImage) {
       setStage('detecting');
-      var form = new FormData();
-      form.append('image', firstImage.blob);
 
-      const res = await axios.post(API_URL + 'age_and_gender_recognition', form, {
-        // headers: {
-        //   'Content-Type': 'multipart/form-data',
-        // },
+      const res = await axios.post(API_URL + 'age_and_gender_recognition', {
+        image: {
+          name: firstImage.name,
+          data: firstImage.data,
+        },
       });
       setStage('hasResponse');
       // setFirstImage(null);
-
       setResponse(res.data.success);
-      console.log(res.data);
-      await setDetections('age_gender_recognitions', res.data.success);
+      if (res.success) {
+        await setDetections('age_gender_recognitions', { ...res.data.success, userId: user.uid });
+      }
     } else {
       setStage('idle');
       toast.error('Please select a valid image!');

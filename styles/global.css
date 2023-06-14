@@ -55,3 +55,6 @@
 .font-semibold {
   font-family: GeologiaSemiBold !important;
 }
+.PhotoView-Slider__BannerWrap {
+  top: var(--top-insets);
+}

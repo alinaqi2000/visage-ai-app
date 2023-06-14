@@ -23,6 +23,8 @@ const AppShell = ({ children, navBar = false }) => {
   }, []);
   const topInsets = async () => {
     const { statusBarHeight } = await SafeArea.getStatusBarHeight();
+    var r = document.querySelector(':root');
+    r.style.setProperty('--top-insets', `${statusBarHeight}px`);
     setStatusbarHeight(statusBarHeight);
   };
   const checkUser = async () => {

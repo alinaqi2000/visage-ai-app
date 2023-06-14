@@ -14,11 +14,15 @@ import { motion } from 'framer-motion';
 import { PhotoProvider, PhotoView } from 'react-photo-view';
 import { setDetections } from '../utils/storage';
 import NothingDetected from '../../assets/lotties/nothing_detected.json';
+import Store from '../../store';
+import { getUser } from '../../store/selectors';
 
 export default function FaceDetection() {
   const [firstImage, setFirstImage] = useState(null);
   const [stage, setStage] = useState('idle');
   const [response, setResponse] = useState(null);
+  const user = Store.useState(getUser);
+
   useEffect(() => {}, []);
   const _pickImage = async () => {
     setResponse(null);
@@ -37,20 +41,22 @@ export default function FaceDetection() {
       toast.error('image selection failed.');
     }
   };
+
   const _sendData = async () => {
     if (firstImage) {
       try {
         setStage('detecting');
-        var form = new FormData();
-        form.append('image', firstImage.blob);
 
-        const res = await sendData(API_URL + 'face_detection', form);
-        console.log(res);
+        const res = await axios.post(API_URL + 'face_detection', {
+          image: {
+            name: firstImage.name,
+            data: firstImage.data,
+          },
+        });
         setStage('hasResponse');
-        setResponse(res.success);
-        toast.error(JSON.stringify(res));
-        if (res.success) {
-          await setDetections('face_detections', res.success);
+        if (res.data.success) {
+          setResponse(res.data.success);
+          await setDetections('face_detections', { ...res.data.success, userId: user.uid });
         }
       } catch (error) {
         toast.error(JSON.stringify(error));

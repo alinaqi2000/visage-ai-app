@@ -18,10 +18,10 @@ export default function Settings() {
   useEffect(() => {}, []);
   const signOut = async () => {
     setStorage('userData', null);
-    setStorage('face_detections', []);
-    setStorage('age_gender_recognitions', []);
-    setStorage('face_expression_recognitions', []);
-    setStorage('face_recognitions', []);
+    // setStorage('face_detections', []);
+    // setStorage('age_gender_recognitions', []);
+    // setStorage('face_expression_recognitions', []);
+    // setStorage('face_recognitions', []);
     FirebaseAuthentication.signOut();
     router.push('/signup');
   };

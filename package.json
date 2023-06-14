@@ -12,7 +12,7 @@
     "build": "next build",
     "start": "next start",
     "export": "next export",
-    "static": "next build && next export"
+    "static": "next build && next export && npx cap sync"
   },
   "dependencies": {
     "@capacitor-community/http": "^1.4.1",
@@ -41,7 +41,9 @@
     "framer-motion": "^10.12.16",
     "i": "^0.3.7",
     "jetifier": "^2.0.0",
+    "localforage": "^1.10.0",
     "lottie-web": "^5.12.0",
+    "mime": "^3.0.0",
     "next": "^13.2.4",
     "npm": "^9.7.1",
     "react": "^18.2.0",
@@ -54,6 +56,7 @@
     "react-virtuoso": "^1.1.1"
   },
   "devDependencies": {
+    "@capacitor/assets": "^2.0.4",
     "@capacitor/cli": "^4.0.0",
     "autoprefixer": "^10.4.12",
     "daisyui": "^3.0.3",

@@ -14,13 +14,16 @@ import { motion } from 'framer-motion';
 import { PhotoProvider, PhotoView } from 'react-photo-view';
 import { setDetections } from '../utils/storage';
 import NothingDetected from '../../assets/lotties/nothing_detected.json';
+import Store from '../../store';
+import { getUser } from '../../store/selectors';
 
 export default function FaceRecognition() {
   const [firstImage, setFirstImage] = useState(null);
   const [secondImage, setSecondImage] = useState(null);
   const [stage, setStage] = useState('idle');
   const [response, setResponse] = useState(null);
-  const width = window.innerWidth;
+  const user = Store.useState(getUser);
+
   useEffect(() => {}, []);
   const _pickImage = async type => {
     setResponse(null);
@@ -53,21 +56,30 @@ export default function FaceRecognition() {
   };
   const _sendData = async () => {
     if (firstImage && secondImage) {
-      setStage('detecting');
-      var form = new FormData();
-      form.append('images', firstImage.blob, firstImage.name);
-      form.append('images', secondImage.blob, secondImage.name);
-      console.log(form);
-      const res = await axios.post(API_URL + 'face_recognition', form, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      setStage('hasResponse');
-      // setFirstImage(null);
+      try {
+        setStage('detecting');
 
-      setResponse(res.data.success);
-      await setDetections('face_recognitions', res.data.success);
+        const res = await axios.post(API_URL + 'face_recognition', {
+          image: {
+            name: firstImage.name,
+            data: firstImage.data,
+          },
+          query: {
+            name: secondImage.name,
+            data: secondImage.data,
+          },
+        });
+        setStage('hasResponse');
+        if (res.data.success) {
+          setResponse(res.data.success);
+          await setDetections('face_recognitions', {
+            ...res.data.success,
+            userId: user.uid,
+          });
+        }
+      } catch (error) {
+        toast.error(JSON.stringify(error));
+      }
     } else {
       setStage('idle');
       toast.error('Please select a valid image!');
@@ -87,7 +99,7 @@ export default function FaceRecognition() {
           <div className="grid grid-cols-2 gap-4">
             <div
               className={
-                'w-auto h-[200px] rounded-xl border-dashed border-2 border-gray-400 overflow-hidden'
+                'w-auto h-[200px] flex-wrap rounded-xl border-dashed border-2 border-gray-400 overflow-hidden'
               }
               style={{
                 backgroundImage: `url('data:image/jpeg;base64,${firstImage?.data}')`,
@@ -100,13 +112,13 @@ export default function FaceRecognition() {
                 onClick={() => _pickImage('reference')}
                 className={MORPHIS_CLASSES + ' flex justify-center h-full items-center'}
               >
-                <BiImageAdd size={32} />
-                <h4 className="ml-3">reference image</h4>
+                <BiImageAdd size={24} />
+                <h4 className="ml-3 text-sm">reference image</h4>
               </div>
             </div>
             <div
               className={
-                'w-auto h-[200px] rounded-xl border-dashed border-2 border-gray-400 overflow-hidden'
+                'w-auto h-[200px] flex-wrap rounded-xl border-dashed border-2 border-gray-400 overflow-hidden'
               }
               style={{
                 backgroundImage: `url('data:image/jpeg;base64,${secondImage?.data}')`,
@@ -119,8 +131,8 @@ export default function FaceRecognition() {
                 onClick={() => _pickImage('query')}
                 className={MORPHIS_CLASSES + ' flex justify-center h-full items-center'}
               >
-                <BiImageAdd size={32} />
-                <h4 className="ml-3">query image</h4>
+                <BiImageAdd size={24} />
+                <h4 className="ml-3 text-sm">query image</h4>
               </div>
             </div>
           </div>
@@ -213,10 +225,7 @@ export default function FaceRecognition() {
             </>
           ) : stage == 'hasResponse' ? (
             <div className="w-full flex flex-col items-center justify-center mt-3">
-              <Lottie
-                style={{ height: 150 }}
-                data={NothingDetected}
-              />
+              <Lottie style={{ height: 150 }} data={NothingDetected} />
               <h6 className="mt-3 text-gray-400">nothing detected!</h6>
             </div>
           ) : (
@@ -257,7 +266,9 @@ const Fetching = () => {
       className="space-y-4 animate-pulse md:space-y-0 md:space-x-8 md:flex md:items-center"
     >
       <div
-        className={MORPHIS_CLASSES + ' flex items-center justify-center w-full h-[200px] rounded-xl'}
+        className={
+          MORPHIS_CLASSES + ' flex items-center justify-center w-full h-[200px] rounded-xl'
+        }
       >
         <svg
           className="w-12 h-12 text-gray-200"

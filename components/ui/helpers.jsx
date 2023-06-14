@@ -3,8 +3,8 @@ import { CapacitorHttp } from '@capacitor/core';
 
 export const MORPHIS_CLASSES =
   'bg-accent backdrop-filter backdrop-blur-xs bg-opacity-10  border-gray-300';
-// export const API_URL = 'https://visage-ai-server.onrender.com/';
-export const API_URL = 'http://192.168.100.91:3000/';
+export const API_URL = 'https://visage-ai-server.onrender.com/';
+// export const API_URL = 'http://192.168.100.91:3000/';
 export default async function base64ToBlob(dataUrl) {
   let newImage = new Image();
   return new Promise((resolve, reject) => {

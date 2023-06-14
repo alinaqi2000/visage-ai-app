@@ -1,5 +1,5 @@
 'use client';
-
+import FormData from 'form-data';
 import React, { useEffect, useState } from 'react';
 import AppShell from '../AppShell';
 import AppBar from '../ui/AppBar';
@@ -14,11 +14,16 @@ import { motion } from 'framer-motion';
 import { PhotoProvider, PhotoView } from 'react-photo-view';
 import { setDetections } from '../utils/storage';
 import NothingDetected from '../../assets/lotties/nothing_detected.json';
+import { isPlatform } from '@ionic/react';
+import Store from '../../store';
+import { getUser } from '../../store/selectors';
 
 export default function FaceExpressionRecognition() {
   const [firstImage, setFirstImage] = useState(null);
   const [stage, setStage] = useState('idle');
   const [response, setResponse] = useState(null);
+  const user = Store.useState(getUser);
+
   useEffect(() => {}, []);
   const _pickImage = async () => {
     setResponse(null);
@@ -40,20 +45,26 @@ export default function FaceExpressionRecognition() {
   };
   const _sendData = async () => {
     if (firstImage) {
-      setStage('detecting');
-      var form = new FormData();
-      form.append('image', firstImage.blob);
+      try {
+        setStage('detecting');
 
-      const res = await axios.post(API_URL + 'face_expression_recognition', form, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      setStage('hasResponse');
-      // setFirstImage(null);
-
-      setResponse(res.data.success);
-      await setDetections('face_expression_recognitions', res.data.success);
+        const res = await axios.post(API_URL + 'face_expression_recognition', {
+          image: {
+            name: firstImage.name,
+            data: firstImage.data,
+          },
+        });
+        setStage('hasResponse');
+        if (res.data.success) {
+          setResponse(res.data.success);
+          await setDetections('face_expression_recognitions', {
+            ...res.data.success,
+            userId: user.uid,
+          });
+        }
+      } catch (error) {
+        toast.error(JSON.stringify(error));
+      }
     } else {
       setStage('idle');
       toast.error('Please select a valid image!');
@@ -149,10 +160,7 @@ export default function FaceExpressionRecognition() {
             </>
           ) : stage == 'hasResponse' ? (
             <div className="w-full flex flex-col items-center justify-center mt-3">
-              <Lottie
-                style={{ height: 150 }}
-                data={NothingDetected}
-              />
+              <Lottie style={{ height: 150 }} data={NothingDetected} />
               <h6 className="mt-3 text-gray-400">nothing detected!</h6>
             </div>
           ) : (
@@ -205,7 +213,9 @@ const Fetching = () => {
       className="space-y-4 animate-pulse md:space-y-0 md:space-x-8 md:flex md:items-center"
     >
       <div
-        className={MORPHIS_CLASSES + ' flex items-center justify-center w-full h-[200px] rounded-xl'}
+        className={
+          MORPHIS_CLASSES + ' flex items-center justify-center w-full h-[200px] rounded-xl'
+        }
       >
         <svg
           className="w-12 h-12 text-gray-200"

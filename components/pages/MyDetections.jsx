@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import AppShell from '../AppShell';
 
-import { deleteDetection, getStorage } from '../utils/storage';
+import { deleteDetection, getDetections, getStorage } from '../utils/storage';
 import Header from '../ui/Header';
 import { BsPersonBoundingBox } from 'react-icons/bs';
 import { PhotoProvider, PhotoView } from 'react-photo-view';
@@ -11,20 +11,24 @@ import dayjs from 'dayjs';
 import { FeatureItem, MORPHIS_CLASSES } from '../ui/helpers';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { FaRegSmileBeam, FaTrash } from 'react-icons/fa';
-import { getTimeline } from '../../store/selectors';
+import { getStatusbarHeight, getTimeline, getUser } from '../../store/selectors';
 import Store from '../../store';
 import { setTimeline } from '../../store/actions';
 import { LuScanFace } from 'react-icons/lu';
 import { GiAges } from 'react-icons/gi';
 import Lottie from '../ui/Lottie';
 import Timeline from '../../assets/lotties/timeline.json';
+import { toast } from 'react-toastify';
+
 dayjs.extend(relativeTime);
 
-const getDetections = async () => {
-  const face_detections = (await getStorage('face_detections')) || [];
-  const age_gender_recognitions = (await getStorage('age_gender_recognitions')) || [];
-  const face_expression_recognitions = (await getStorage('face_expression_recognitions')) || [];
-  const face_recognitions = (await getStorage('face_recognitions')) || [];
+const loadDetections = async user => {
+  const face_detections = (await getDetections(user.uid, 'face_detections')) || [];
+  const age_gender_recognitions = (await getDetections(user.uid, 'age_gender_recognitions')) || [];
+  const face_expression_recognitions =
+    (await getDetections(user.uid, 'face_expression_recognitions')) || [];
+  const face_recognitions = (await getDetections(user.uid, 'face_recognitions')) || [];
+
   const data = [
     ...face_recognitions.map((d, index) => ({ ...d, index })),
     ...face_detections.map((d, index) => ({ ...d, index })),
@@ -32,19 +36,22 @@ const getDetections = async () => {
     ...face_expression_recognitions.map((d, index) => ({ ...d, index })),
   ];
   data.sort(function (a, b) {
-    return new Date(Date.parse(b.dateTime)) - new Date(Date.parse(a.dateTime));
+    return new Date(b.dateTime.toDate() - a.dateTime.toDate());
   });
   return data;
 };
+
 export default function MyDetections() {
   const timeline = Store.useState(getTimeline);
+  const user = Store.useState(getUser);
   useEffect(() => {
     renderTimeline();
   }, []);
   const renderTimeline = async () => {
-    const detections = await getDetections();
+    const detections = await loadDetections(user);
     setTimeline(detections);
   };
+
   return (
     <AppShell navBar="true">
       <Header />
@@ -53,45 +60,19 @@ export default function MyDetections() {
           <>
             <div className="mb-4">
               <h4 className="text-gray-300 title-bar uppercase font-semibold">timeline</h4>
-              <p className="text-gray-400 text-xs mx-2">
-                time is stored locally, it will be deleted when thi session expires.
-              </p>
+              <p className="text-gray-400 text-xs mx-2">timeline is backed-up on the cloud.</p>
             </div>
             <ol className="relative">
               {timeline.map((d, index) => {
                 switch (d.type) {
                   case 'face_recognitions':
-                    return (
-                      <FaceRecognition
-                        key={`${d.type}-${d.index}`}
-                        last={timeline.length == index + 1}
-                        detection={d}
-                      />
-                    );
+                    return <FaceRecognition key={`${d.type}-${d.index}`} detection={d} />;
                   case 'face_expression_recognitions':
-                    return (
-                      <FaceExpression
-                        key={`${d.type}-${d.index}`}
-                        last={timeline.length == index + 1}
-                        detection={d}
-                      />
-                    );
+                    return <FaceExpression key={`${d.type}-${d.index}`} detection={d} />;
                   case 'face_detections':
-                    return (
-                      <FaceDetection
-                        key={`${d.type}-${d.index}`}
-                        last={timeline.length == index + 1}
-                        detection={d}
-                      />
-                    );
+                    return <FaceDetection key={`${d.type}-${d.index}`} detection={d} />;
                   case 'age_gender_recognitions':
-                    return (
-                      <AgeGenderRecognition
-                        key={`${d.type}-${d.index}`}
-                        last={timeline.length == index + 1}
-                        detection={d}
-                      />
-                    );
+                    return <AgeGenderRecognition key={`${d.type}-${d.index}`} detection={d} />;
                 }
               })}
             </ol>
@@ -106,10 +87,14 @@ export default function MyDetections() {
     </AppShell>
   );
 }
-const FaceDetection = ({ last, detection }) => {
+const FaceDetection = ({ detection }) => {
+  const statusbarHeight = Store.useState(getStatusbarHeight);
+  const user = Store.useState(getUser);
+
   const delDetection = async () => {
-    await deleteDetection('face_detections', detection.index);
-    const detections = await getDetections();
+    await deleteDetection('face_detections', detection);
+    toast.success('Record deleted successfully!');
+    const detections = await loadDetections(user);
     setTimeline(detections);
   };
   return (
@@ -126,7 +111,7 @@ const FaceDetection = ({ last, detection }) => {
         <div>
           <h3 className="flex items-center mt-3 mb-1 text-sm font-semibold">face detection</h3>
           <time className="block mb-2 text-xs leading-none text-gray-400 dark:text-gray-500">
-            {dayjs(detection.dateTime).fromNow()}
+            {dayjs(detection.dateTime.toDate()).fromNow()}
           </time>
         </div>
 
@@ -137,24 +122,33 @@ const FaceDetection = ({ last, detection }) => {
       <FeatureItem>
         <PhotoProvider
           maskOpacity={0.7}
+          toolbarRender={() => (
+            <div style={{ top: statusbarHeight }}>
+              <h4>Toolbar</h4>
+            </div>
+          )}
           overlayRender={props => (
             <div className="fixed bottom-0 p-[15px]">
               <h4>Detections: {detection.detections.length}</h4>
             </div>
           )}
         >
-          <PhotoView key={0} src={detection.imageURL}>
-            <img className="rounded-xl" src={detection.imageURL} alt="" />
+          <PhotoView key={0} src={detection.imageData}>
+            <img className="rounded-xl" src={detection.imageData} alt="" />
           </PhotoView>
         </PhotoProvider>
       </FeatureItem>
     </li>
   );
 };
-const FaceExpression = ({ last, detection }) => {
+const FaceExpression = ({ detection }) => {
+  const statusbarHeight = Store.useState(getStatusbarHeight);
+  const user = Store.useState(getUser);
+
   const delDetection = async () => {
-    await deleteDetection('face_expression_recognitions', detection.index);
-    const detections = await getDetections();
+    await deleteDetection('face_expression_recognitions', detection);
+    toast.success('Record deleted successfully!');
+    const detections = await loadDetections(user);
     setTimeline(detections);
   };
   return (
@@ -173,7 +167,7 @@ const FaceExpression = ({ last, detection }) => {
             face expression detection
           </h3>
           <time className="block mb-2 text-xs leading-none text-gray-400 dark:text-gray-500">
-            {dayjs(detection.dateTime).fromNow()}
+            {dayjs(detection.dateTime.toDate()).fromNow()}
           </time>
         </div>
 
@@ -184,24 +178,33 @@ const FaceExpression = ({ last, detection }) => {
       <FeatureItem>
         <PhotoProvider
           maskOpacity={0.7}
+          toolbarRender={() => (
+            <div style={{ top: statusbarHeight }}>
+              <h4>Toolbar</h4>
+            </div>
+          )}
           overlayRender={props => (
             <div className="fixed bottom-0 p-[15px]">
               <h4>Detections: {detection.detections.length}</h4>
             </div>
           )}
         >
-          <PhotoView key={0} src={detection.imageURL}>
-            <img className="rounded-xl" src={detection.imageURL} alt="" />
+          <PhotoView key={0} src={detection.imageData}>
+            <img className="rounded-xl" src={detection.imageData} alt="" />
           </PhotoView>
         </PhotoProvider>
       </FeatureItem>
     </li>
   );
 };
-const FaceRecognition = ({ last, detection }) => {
+const FaceRecognition = ({ detection }) => {
+  const statusbarHeight = Store.useState(getStatusbarHeight);
+  const user = Store.useState(getUser);
+
   const delDetection = async () => {
-    await deleteDetection('face_recognitions', detection.index);
-    const detections = await getDetections();
+    await deleteDetection('face_recognitions', detection);
+    toast.success('Record deleted successfully!');
+    const detections = await loadDetections(user);
     setTimeline(detections);
   };
   return (
@@ -218,7 +221,7 @@ const FaceRecognition = ({ last, detection }) => {
         <div>
           <h3 className="flex items-center mt-3 mb-1 text-sm font-semibold">face reocgnition</h3>
           <time className="block mb-2 text-xs leading-none text-gray-400 dark:text-gray-500">
-            {dayjs(detection.dateTime).fromNow()}
+            {dayjs(detection.dateTime.toDate()).fromNow()}
           </time>
         </div>
 
@@ -228,32 +231,40 @@ const FaceRecognition = ({ last, detection }) => {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <FeatureItem>
-          <h6 className="text-sm mb-1">reference</h6>
           <PhotoProvider
             maskOpacity={0.7}
+            toolbarRender={() => (
+              <div style={{ top: statusbarHeight }}>
+                <h4>Toolbar</h4>
+              </div>
+            )}
             overlayRender={props => (
               <div className="fixed bottom-0 p-[15px]">
                 <h4>Detections: {detection.detections.length}</h4>
               </div>
             )}
           >
-            <PhotoView key={0} src={detection.imageURL}>
-              <img className="rounded-xl" src={detection.imageURL} alt="" />
+            <PhotoView key={0} src={detection.imageData}>
+              <img className="rounded-xl" src={detection.imageData} alt="" />
             </PhotoView>
           </PhotoProvider>
         </FeatureItem>
         <FeatureItem>
-          <h6 className="text-sm mb-1">result</h6>
           <PhotoProvider
             maskOpacity={0.7}
+            toolbarRender={() => (
+              <div style={{ top: statusbarHeight }}>
+                <h4>Toolbar</h4>
+              </div>
+            )}
             overlayRender={props => (
               <div className="fixed bottom-0 p-[15px]">
                 <h4>Detections: {detection.detections.length}</h4>
               </div>
             )}
           >
-            <PhotoView key={0} src={detection.queryURL}>
-              <img className="rounded-xl" src={detection.queryURL} alt="" />
+            <PhotoView key={0} src={detection.queryData}>
+              <img className="rounded-xl" src={detection.queryData} alt="" />
             </PhotoView>
           </PhotoProvider>
         </FeatureItem>
@@ -261,14 +272,18 @@ const FaceRecognition = ({ last, detection }) => {
     </li>
   );
 };
-const AgeGenderRecognition = ({ last, detection }) => {
+const AgeGenderRecognition = ({ detection }) => {
+  const statusbarHeight = Store.useState(getStatusbarHeight);
+  const user = Store.useState(getUser);
+
   const delDetection = async () => {
-    await deleteDetection('age_gender_recognitions', detection.index);
-    const detections = await getDetections();
+    await deleteDetection('age_gender_recognitions', detection);
+    toast.success('Record deleted successfully!');
+    const detections = await loadDetections(user);
     setTimeline(detections);
   };
   return (
-    <li className="pl-8 border-l border-accent last:border-0 ml-5">
+    <li className="pl-8 border-l border-b border-b-gray-800 pb-3 border-accent last:border-0 ml-5">
       <span
         className={
           MORPHIS_CLASSES +
@@ -283,7 +298,7 @@ const AgeGenderRecognition = ({ last, detection }) => {
             age/gender recognition
           </h3>
           <time className="block mb-2 text-xs leading-none text-gray-400 dark:text-gray-500">
-            {dayjs(detection.dateTime).fromNow()}
+            {dayjs(detection.dateTime.toDate()).fromNow()}
           </time>
         </div>
 
@@ -294,14 +309,19 @@ const AgeGenderRecognition = ({ last, detection }) => {
       <FeatureItem>
         <PhotoProvider
           maskOpacity={0.7}
+          toolbarRender={() => (
+            <div style={{ top: statusbarHeight }}>
+              <h4>Toolbar</h4>
+            </div>
+          )}
           overlayRender={props => (
             <div className="fixed bottom-0 p-[15px]">
               <h4>Detections: {detection.detections.length}</h4>
             </div>
           )}
         >
-          <PhotoView key={0} src={detection.imageURL}>
-            <img className="rounded-xl" src={detection.imageURL} alt="" />
+          <PhotoView key={0} src={detection.imageData}>
+            <img className="rounded-xl" src={detection.imageData} alt="" />
           </PhotoView>
         </PhotoProvider>
       </FeatureItem>
